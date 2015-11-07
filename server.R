@@ -1,5 +1,4 @@
 library(quantmod)
-library(dygraphs)
 
 shinyServer(function(input, output) {
   
@@ -12,16 +11,17 @@ shinyServer(function(input, output) {
     mm <- dataPrices [,2]
     sReturns <- Delt(stock)[-1]
     mmReturns <- Delt(mm)[-1]
-    lm(as.vector(sReturns) ~ as.vector(mmReturns))
+    reg <- lm(as.vector(sReturns) ~ as.vector(mmReturns))
       ##CAPM plot needed to show risk and expected return of the asset.
+    theData <- list(x = data.frame(cbind(as.vector(sReturns), as.vector(mmReturns))), y = reg)
   })
   
 
-  output$plot <- renderDygraph({
+  output$plot <- renderPlot({
     
-    prices <- dataInput()
-    
-    dygraph(Ad(prices)) %>%
-      dyRangeSelector()
+    theData <- dataInput()
+   ## need to label the axes below and add the equation to the table, also may want to use ggplot ----
+    plot(theData$x[,2], theData$x[,1])
+    abline(theData$y$coef[1], theData$y$coef[2])
   })
 })

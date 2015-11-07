@@ -1,5 +1,4 @@
 library(shiny)
-library(dygraphs)
 
 shinyUI(fluidPage(
   titlePanel("Simple Stock Charting App"),
@@ -11,6 +10,6 @@ shinyUI(fluidPage(
       textInput("symb", label = h3("Input a Valid Stock Ticker"), value = "GE") 
     ),
 
-    mainPanel(dygraphOutput("plot"))
+    mainPanel(plotOutput("plot"))
   )
 ))
