@@ -1,7 +1,7 @@
 library(shiny)
 
 shinyUI(fluidPage(
-  titlePanel("Simple Stock Charting App"),
+  titlePanel("Expected Return for a stock"),
   
   sidebarLayout(
     sidebarPanel(
