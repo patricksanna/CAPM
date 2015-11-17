@@ -1,7 +1,7 @@
 library(shiny)
 
 shinyUI(fluidPage(
-  titlePanel("Expected Return for a Stock"),
+  titlePanel("CAPM for Desired Stock"),
   
   sidebarLayout(
     sidebarPanel(
@@ -9,15 +9,13 @@ shinyUI(fluidPage(
       
       textInput("symb", label = h3("Input a Valid Stock Ticker"), value = "GE")
       
-      ),  
-    sidebarPanel(
-      textOutput("eRmath"),
-      helpText("[eR = rF + Beta(mR - rF)]")
+      ),
     
-      )),
-
     mainPanel(
-      plotOutput("SML"),
-      plotOutput("plot")
-  )
+      tabsetPanel(
+        tabPanel("Market Regression", plotOutput("plot")),
+        tabPanel("Expected Return",  plotOutput("SML"), textOutput("eRmath"), helpText("[eR = rF + Beta(mR - rF)]"))
+        
+      )
+  ))
 ))
