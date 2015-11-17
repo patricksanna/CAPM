@@ -17,6 +17,7 @@ shinyUI(fluidPage(
       )),
 
     mainPanel(
+      plotOutput("SML"),
       plotOutput("plot")
   )
 ))
