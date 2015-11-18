@@ -4,7 +4,9 @@ library(ggplot2)
 shinyServer(function(input, output) {
   
   dataInput <- reactive({
-    
+      validate(
+          need(input$symb != "", "Please type a ticker")
+      )    
     prices <- getSymbols(input$symb, auto.assign = FALSE)
     market <- getSymbols("^GSPC", auto.assign = FALSE)
     fred <- getSymbols("FMCC", auto.assign = FALSE)
