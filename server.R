@@ -6,19 +6,22 @@ shinyServer(function(input, output) {
   dataInput <- reactive({
       validate(
           need(input$symb != "", "Please type a ticker")
-      )    
-    prices <- getSymbols(input$symb, auto.assign = FALSE)
-    market <- getSymbols("^GSPC", auto.assign = FALSE)
-    fred <- getSymbols("FMCC", auto.assign = FALSE)
-    dataPrices <- merge.xts(Ad(prices), Ad(market), Ad(fred), join = "inner")
+      )
+ 
+    prices <- getSymbols(input$symb, from = input$sdate, to = input$edate, auto.assign = FALSE)
+    market <- getSymbols("^GSPC", from = input$sdate, to = input$edate, auto.assign = FALSE)
+    freddie <- getSymbols("FMCC", auto.assign = FALSE)
+    
+    dataPrices <- merge.xts(Ad(prices), Ad(market), Ad(freddie), join = "inner")
+    
     stock <- dataPrices[,1]
     mm <- dataPrices [,2]
-    fm <- dataPrices [,3]
     sReturns <- Delt(stock)[-1]
     mmReturns <- Delt(mm)[-1]
-    riskfree <- Delt(fm)[-1]
     reg <- lm((sReturns) ~ (mmReturns))
     rMM <- mean(mmReturns)*365
+    fm <- dataPrices [,3]
+    riskfree <- Delt(fm)[-1]
     rF <- mean(riskfree)
     rI <- rF +  reg$coefficients[2] * (rMM - rF)
     theData <- list(x = data.frame(cbind(as.vector(sReturns), as.vector(mmReturns))), y = reg, z = rI, rF = rF, rMM = rMM)
@@ -45,6 +48,6 @@ shinyServer(function(input, output) {
       geom_abline(intercept =theData$rF, slope = ((theData$z - theData$rF)/theData$y$coef[2])) +
        labs(title = "Expected Return")
 
-
+  
   })
 })
