@@ -5,14 +5,14 @@ shinyServer(function(input, output) {
   
   dataInput <- reactive({
       validate(
-          need(input$symb != "", "Please type a ticker")
+          need(input$symb != "", "Please type a ticker"),
+          need(input$date[1] < input$date[2], 'Start date is either missing or is later than end date.')
       )
  
-    prices <- getSymbols(input$symb, from = input$sdate, to = input$edate, auto.assign = FALSE)
-    market <- getSymbols("^GSPC", from = input$sdate, to = input$edate, auto.assign = FALSE)
-    freddie <- getSymbols("FMCC", auto.assign = FALSE)
-    
-    dataPrices <- merge.xts(Ad(prices), Ad(market), Ad(freddie), join = "inner")
+    prices <- getSymbols(input$symb, from = input$date[1], to = input$date[2], auto.assign = FALSE)
+    market <- getSymbols("^GSPC", from = input$date[1], to = input$date[2], auto.assign = FALSE)
+    t <- getSymbols("TB1YR", src = "FRED", auto.assign = FALSE)
+    dataPrices <- merge.xts(Ad(prices), Ad(market), join = "inner")
     
     stock <- dataPrices[,1]
     mm <- dataPrices [,2]
@@ -20,11 +20,9 @@ shinyServer(function(input, output) {
     mmReturns <- Delt(mm)[-1]
     reg <- lm((sReturns) ~ (mmReturns))
     rMM <- mean(mmReturns)*365
-    fm <- dataPrices [,3]
-    riskfree <- Delt(fm)[-1]
-    rF <- mean(riskfree)
+    rF <- as.vector(t[length(t)])/100
     rI <- rF +  reg$coefficients[2] * (rMM - rF)
-    theData <- list(x = data.frame(cbind(as.vector(sReturns), as.vector(mmReturns))), y = reg, z = rI, rF = rF, rMM = rMM)
+    theData <- list(x = data.frame(cbind(as.vector(sReturns), as.vector(mmReturns))), y = reg, z = rI[length(rI)], rF = rF, rMM = rMM)
 
   })
   
@@ -32,22 +30,31 @@ shinyServer(function(input, output) {
   output$plot <- renderPlot({
     
     theData <- dataInput()
-    qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
-    geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2]) +
-    labs(title = "Market Regression")
+      qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
+      geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2], color = "grey23") +
+      labs(title = "Market Regression")+
+      geom_point(color = "cadetblue4") 
+      
+    
   })
   
   output$eRmath <- renderText({
     theData <- dataInput()
-    return(paste("Expected Return:", round(theData$z*100, 2), "%", " = ", round(theData$rF*100, 2), "%", "+", round(theData$y$coefficients[2], 2), "(", round(100*theData$rMM,2), "%", "-", round(100*theData$rF, 2), "%",")"))
+    return(paste("Expected Return:", round(theData$z*100, 2), "%", " = ", round(theData$rF*100, 2), "%", "+", round(theData$y$coefficients[2], 2), "(", round(100*theData$rMM,2), "%", "-", round(theData$rF*100, 2), "%",")"))
   })
   
   output$SML <- renderPlot({
     theData <- dataInput()
       qplot(theData$y$coef[2], theData$z, ylim = c(0, .15), xlim = c(0, 2), ylab = "Expected Return", xlab = "Beta") +
       geom_abline(intercept =theData$rF, slope = ((theData$z - theData$rF)/theData$y$coef[2])) +
-       labs(title = "Expected Return")
+      labs(title = "Security Market Line") +
+      geom_point(color = "cadetblue4", size = 3.5)
 
+  })
+  
+  output$beta <- renderText({
+    theData <- dataInput()
+      paste("    Beta:  ", round(theData$y$coef[2], 2))
   
   })
 })
