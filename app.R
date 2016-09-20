@@ -1,3 +1,4 @@
+## Patricks version of the CAPM app
 library(quantmod)
 library(ggplot2)
 
