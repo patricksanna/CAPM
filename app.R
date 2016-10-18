@@ -1,9 +1,9 @@
-## Patricks version of the CAPM app
+## Patrick's version of the CAPM app
 library(quantmod)
 library(ggplot2)
 
 ui <- fluidPage(
-  titlePanel("CAPM for Desired Stock"),
+  titlePanel("Factor Model of Desired Stock"),
   
   sidebarLayout(
     sidebarPanel(color = 'cadetblue4',
@@ -15,6 +15,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
+	      ## This sets up two panels -- I think we only want one, the 3D scatterplot.  Should we remove the second panel?  
       tabsetPanel(
         tabPanel("Market Regression", plotOutput("plot"),h4(textOutput('beta'))),
         tabPanel("Expected Return",  plotOutput("SML"), textOutput("eRmath"), helpText("[eR = rF + Beta(mR - rF)]"))
@@ -37,13 +38,21 @@ server <- function(input, output) {
     market <- getSymbols("^GSPC", from = input$date[1], to = input$date[2], auto.assign = FALSE)
     options(download.file.method="curl")
     t <- getSymbols.FRED("TB1YR", auto.assign = FALSE)
+    ## Lets also pull crude oil prices from FRED
+    oil <- getSymbols.FRED("DCOILWTICO", auto.assign = FALSE)
     dataPrices <- merge.xts(Ad(prices), Ad(market), join = "inner")
     
     stock <- dataPrices[,1]
     mm <- dataPrices [,2]
     sReturns <- Delt(stock)[-1]
     mmReturns <- Delt(mm)[-1]
-    reg <- lm((sReturns) ~ (mmReturns))
+    oilReturns <- Delt(oil)[-1]
+
+
+
+
+    ## wont work yet -- vectors of different lengths -- merge before regression
+    reg <- lm((sReturns) ~ (mmReturns) + oilReturns)
     rMM <- mean(mmReturns)*365
     rF <- as.vector(t[length(t)])/100
     rI <- rF +  reg$coefficients[2] * (rMM - rF)
