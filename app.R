@@ -15,7 +15,7 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-	      ## This sets up two panels -- I think we only want one, the 3D scatterplot.  Should we remove the second panel?  
+	    ## This sets up two panels -- I think we only want one, the 3D scatterplot.  Should we remove the second panel?  
       tabsetPanel(
         tabPanel("Market Regression", plotOutput("plot"),h4(textOutput('beta'))),
         tabPanel("Expected Return",  plotOutput("SML"), textOutput("eRmath"), helpText("[eR = rF + Beta(mR - rF)]"))
@@ -36,7 +36,8 @@ server <- function(input, output) {
     
     prices <- getSymbols(input$symb, from = input$date[1], to = input$date[2], auto.assign = FALSE)
     market <- getSymbols("^GSPC", from = input$date[1], to = input$date[2], auto.assign = FALSE)
-    options(download.file.method="curl")
+    
+    #options(download.file.method="curl")
     t <- getSymbols.FRED("TB1YR", auto.assign = FALSE)
     ## Lets also pull crude oil prices from FRED
     oil <- getSymbols.FRED("DCOILWTICO", auto.assign = FALSE)
@@ -47,16 +48,16 @@ server <- function(input, output) {
     sReturns <- Delt(stock)[-1]
     mmReturns <- Delt(mm)[-1]
     oilReturns <- Delt(oil)[-1]
-
-
+    data.merged <- merge.xts(mmreturns,oilreturn,sreturns, join="inner")
+    names(data.merged) <- c("market", "oil", "stock")
 
 
     ## wont work yet -- vectors of different lengths -- merge before regression
-    reg <- lm((sReturns) ~ (mmReturns) + oilReturns)
+    reg <- lm((data.merged$stock) ~ (data.merged$market) + data.merged$oil)
     rMM <- mean(mmReturns)*365
     rF <- as.vector(t[length(t)])/100
     rI <- rF +  reg$coefficients[2] * (rMM - rF)
-    theData <- list(x = data.frame(cbind(as.vector(sReturns), as.vector(mmReturns))), y = reg, z = rI[length(rI)], rF = rF, rMM = rMM)
+    theData <- list(x = data.frame(cbind(as.vector(data.merged$stock), as.vector(data.merged$market), as.vector(data.merged$oil))), y = reg, z = rI[length(rI)], rF = rF, rMM = rMM)
 
   })
   
@@ -64,7 +65,7 @@ server <- function(input, output) {
   output$plot <- renderPlot({
     
     theData <- dataInput()
-      qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
+    qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
       geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2], color = "grey23") +
       labs(title = "Market Regression")+
       geom_point(color = "cadetblue4") 
@@ -79,7 +80,7 @@ server <- function(input, output) {
   
   output$SML <- renderPlot({
     theData <- dataInput()
-      qplot(theData$y$coef[2], theData$z, ylim = c(0, .15), xlim = c(0, 2), ylab = "Expected Return", xlab = "Beta") +
+    qplot(theData$y$coef[2], theData$z, ylim = c(0, .15), xlim = c(0, 2), ylab = "Expected Return", xlab = "Beta") +
       geom_abline(intercept =theData$rF, slope = ((theData$z - theData$rF)/theData$y$coef[2])) +
       labs(title = "Security Market Line") +
       geom_point(color = "cadetblue4", size = 3.5)
@@ -88,7 +89,7 @@ server <- function(input, output) {
   
   output$beta <- renderText({
     theData <- dataInput()
-      paste("    Beta:  ", round(theData$y$coef[2], 2))
+    paste("    Beta:  ", round(theData$y$coef[2], 2))
   
   })
 }
