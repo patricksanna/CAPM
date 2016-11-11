@@ -70,8 +70,9 @@ server <- function(input, output) {
       ## plotly 3D scatterplot
       forPlotly <- theData$x
       names(forPlotly) <- c("stock", "market", "oil")
-      p <- plot_ly(forPlotly, z = ~stock, y = ~market, x = ~oil, type = 'scatter3d', mode = 'markers',
-        opacity = 1)#, line = list(width = 6, color = ~color, reverscale = FALSE))
+      p <- plot_ly(forPlotly, z = ~stock, y = ~market, x = ~oil, type = 'scatter3d', mode = 'markers', marker = list(size = 10,
+                       color = ~oil),
+        opacity = .5)#, line = list(width = 6, color = ~color, reverscale = FALSE))
     ## qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
     ##   geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2], color = "grey23") +
     ##   labs(title = "Market Regression")+
