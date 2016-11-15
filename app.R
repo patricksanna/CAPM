@@ -1,6 +1,7 @@
 ## Patrick's version of the CAPM app
 library(quantmod)
 library(ggplot2)
+library(plotly)
 
 ui <- fluidPage(
   titlePanel("Factor Model of Desired Stock"),
@@ -17,7 +18,7 @@ ui <- fluidPage(
     mainPanel(
 	    ## This sets up two panels -- I think we only want one, the 3D scatterplot.  Should we remove the second panel?  
       tabsetPanel(
-        tabPanel("Market Regression", plotOutput("plot"),h4(textOutput('beta'))),
+        tabPanel("Market Regression", plotlyOutput("plot"),h4(textOutput('beta'))),
         tabPanel("Expected Return",  plotOutput("SML"), textOutput("eRmath"), helpText("[eR =Beta(mR)]"))
         
       )
@@ -45,10 +46,11 @@ server <- function(input, output) {
     
     stock <- dataPrices[,1]
     mm <- dataPrices [,2]
+    oil <- dataPrices[,3]
     sReturns <- Delt(stock)[-1]
     mmReturns <- Delt(mm)[-1]
     oilReturns <- Delt(oil)[-1]
-    data.merged <- merge.xts(mmReturns,oilReturn,sReturns, join="inner")
+    data.merged <- merge.xts(mmReturns, oilReturns, sReturns, join="inner")
     names(data.merged) <- c("market", "oil", "stock")
 
 
@@ -62,13 +64,19 @@ server <- function(input, output) {
   })
   
 
-  output$plot <- renderPlot({
+  output$plot <- renderPlotly({
     
-    theData <- dataInput()
-    qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
-      geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2], color = "grey23") +
-      labs(title = "Market Regression")+
-      geom_point(color = "cadetblue4") 
+      theData <- dataInput()
+      ## plotly 3D scatterplot
+      forPlotly <- theData$x
+      names(forPlotly) <- c("stock", "market", "oil")
+      p <- plot_ly(forPlotly, z = ~stock, y = ~market, x = ~oil, type = 'scatter3d', mode = 'markers', marker = list(size = 10,
+                       color = ~oil),
+        opacity = .5)#, line = list(width = 6, color = ~color, reverscale = FALSE))
+    ## qplot(theData$x[,2], theData$x[,1], ylab = "Asset Returns", xlab = "Market Returns") +    
+    ##   geom_abline(intercept =theData$y$coef[1], slope = theData$y$coef[2], color = "grey23") +
+    ##   labs(title = "Market Regression")+
+    ##   geom_point(color = "cadetblue4") 
       
     
   })
